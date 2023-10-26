@@ -33,7 +33,7 @@ jobs:
       run: |
         #echo "${{ steps.list-subfolders.outputs.subfolders }}"
         # Convert JSON array to Bash array
-        IFS=',' read -r -a filters <<< "$(echo "${{ steps.list-subfolders.outputs.subfolders }}" | jq -r '.[]')"
+        IFS=',' read -r -a filters <<< "$(echo '${{ steps.list-subfolders.outputs.subfolders }}' | jq -r '.[]')"
 
         # Start filters configuration
         echo "filters:" > filters.yml
