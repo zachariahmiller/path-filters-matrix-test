@@ -53,6 +53,8 @@ jobs:
     outputs: 
       capabilities: ${{ steps.path-filter.outputs.changes }}
     steps:
+    - name: Checkout the code
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
     - name: Restore file from output
       run: |
         echo "${{ needs.setup.outputs.filters_file }}" | base64 --decode > filters.yaml
