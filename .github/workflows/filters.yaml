@@ -1,0 +1,7 @@
+filters:
+  istio:
+    - 'capabilities/istio/**'
+  neuvector:
+    - 'capabilities/neuvector/**'
+  uds-core:
+    - '**'
