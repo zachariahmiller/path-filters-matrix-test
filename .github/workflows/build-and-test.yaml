@@ -1,0 +1,23 @@
+name: Build and Test Istio Capability on k3d
+
+on:
+  workflow_dispatch:
+    inputs:
+      capability:
+        type: string
+  workflow_call:
+    inputs:
+      capability:
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Faux steps
+        run: |
+              echo ${{ inputs.capability }}       

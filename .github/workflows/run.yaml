@@ -29,7 +29,8 @@ jobs:
         SUBFOLDERS=$(find ${{ github.workspace }}/capabilities -mindepth 1 -maxdepth 1 -type d -printf '%P\n')
         SUBFOLDERS_JSON=$(echo "$SUBFOLDERS" | jq -R -s -c 'split("\n")[:-1]')
         echo "subfolders=$SUBFOLDERS_JSON" >> $GITHUB_OUTPUT
-    - name: test
+    - name: save filters
+      id: save-filters
       run: |
         #echo "${{ steps.list-subfolders.outputs.subfolders }}"
         # Convert JSON array to Bash array
@@ -45,53 +46,29 @@ jobs:
         echo "  $filter:" >> filters.yml
         echo "    - 'capabilities/$filter/**'" >> filters.yml
         done
-
+        echo "filters_file=$(cat filters.yml | base64)" >> $GITHUB_OUTPUT
   check-paths:
     needs: setup
     runs-on: ubuntu-latest
     outputs: 
-      capabilities: ${{ steps.filter.outputs.changes }}
+      capabilities: ${{ steps.path-filter.outputs.changes }}
     steps:
+    - name: Restore file from output
+      run: |
+        echo "${{ needs.setup.outputs.filters_file }}" | base64 --decode > filters.yml
     - name: Check paths
       id: path-filter
       uses: dorny/paths-filter@v2
       with:
-        filters: ${{ needs.setup.outputs.filters_file }}
+        filters: filters.yaml
 
-    # - name: Transform filter outputs to JSON
-    #   id: transform-filters
-    #   run: |
-    #     # Remove brackets and spaces from the input string, then convert to a Bash array using comma as delimiter
-    #     IFS=',' read -r -a subpaths <<< "$(echo '[istio,neuvector]' | tr -d '[] ')"
-
-    #     # Start the filters_json object
-    #     filters_json="{"
-
-    #     # Loop through each subpath and construct the JSON object
-    #     for subpath in "${subpaths[@]}"; do
-    #       # Use jq to get the boolean value from the string output of the path-filter step
-    #       output_value=$(echo "${{ steps.path-filter.outputs.$subpath }}" | jq -r 'if . == "true" then true else false end')
-    #       filters_json+="\"$subpath\":$output_value,"
-    #     done
-
-    #     # Remove the trailing comma and close the filters_json object
-    #     filters_json="${filters_json%,}}"
-
-    #     # Set the filters_json object as an output
-    #     echo "::set-output name=filters_json::$filters_json"
-
-    # - name: Generate matrix
-    #   id: set-matrix
-    #   run: |
-    #     FILTERS_JSON=${{ steps.transform-filters.outputs.filters_json }}
-    #     MATRIX=$(echo "$FILTERS_JSON" | jq -r '
-    #       {
-    #         include: [
-    #           . as $filters |
-    #           keys[] |
-    #           select($filters[.]) |
-    #           { path: . }
-    #         ]
-    #       }
-    #     ')
-    #     echo "::set-output name=matrix::$MATRIX"
+  build-and-test:
+    needs: check-paths
+    strategy:
+      matrix:
+        capability: ${{ fromJSON(needs.check-paths.outputs.capabilities) }}
+    uses: ./.github/workflows/build-and-test.yaml
+    with:
+      platform: ubuntu-latest
+    secrets: inherit
+        
