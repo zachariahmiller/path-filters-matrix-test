@@ -67,7 +67,9 @@ jobs:
       uses: dorny/paths-filter@v2
       with:
         filters: .github/workflows/filters.yaml
-
+    - name: Debug output
+      run: echo "${{ steps.path-filter.outputs.changes }}"
+      
   build-and-test:
     needs: check-paths
     strategy:
