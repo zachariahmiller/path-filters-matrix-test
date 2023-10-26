@@ -67,7 +67,7 @@ jobs:
     strategy:
       matrix:
         capability: ${{ fromJSON(needs.check-paths.outputs.capabilities) }}
-    uses: ./.github/workflows/build-and-test.yaml@main
+    uses: ./.github/workflows/build-and-test.yaml
     with:
       capability: ${{ matrix.capability }}
     secrets: inherit
