@@ -15,10 +15,11 @@ defaults:
 
 
 jobs:
-  check_changes:
+  setup:
     runs-on: ubuntu-latest
     outputs:
         matrix: ${{ steps.list-subfolders.outputs.subfolders }}
+        filters_file: ${{ steps.save-filters.outputs.filters_file }}
     steps:    
     - name: Checkout the code
       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -30,7 +31,7 @@ jobs:
         echo "subfolders=$SUBFOLDERS_JSON" >> $GITHUB_OUTPUT
     - name: test
       run: |
-        echo "${{ steps.list-subfolders.outputs.subfolders }}"
+        #echo "${{ steps.list-subfolders.outputs.subfolders }}"
         # Convert JSON array to Bash array
         IFS=',' read -r -a filters <<< "$(echo "${{ steps.list-subfolders.outputs.subfolders }}" | jq -r '.[]')"
 
@@ -44,3 +45,53 @@ jobs:
         echo "  $filter:" >> filters.yml
         echo "    - 'capabilities/$filter/**'" >> filters.yml
         done
+
+  check-paths:
+    needs: setup
+    runs-on: ubuntu-latest
+    outputs: 
+      capabilities: ${{ steps.filter.outputs.changes }}
+    steps:
+    - name: Check paths
+      id: path-filter
+      uses: dorny/paths-filter@v2
+      with:
+        filters: ${{ needs.setup.outputs.filters_file }}
+
+    - name: Transform filter outputs to JSON
+      id: transform-filters
+      run: |
+        # Remove brackets and spaces from the input string, then convert to a Bash array using comma as delimiter
+        IFS=',' read -r -a subpaths <<< "$(echo '[istio,neuvector]' | tr -d '[] ')"
+
+        # Start the filters_json object
+        filters_json="{"
+
+        # Loop through each subpath and construct the JSON object
+        for subpath in "${subpaths[@]}"; do
+          # Use jq to get the boolean value from the string output of the path-filter step
+          output_value=$(echo "${{ steps.path-filter.outputs.$subpath }}" | jq -r 'if . == "true" then true else false end')
+          filters_json+="\"$subpath\":$output_value,"
+        done
+
+        # Remove the trailing comma and close the filters_json object
+        filters_json="${filters_json%,}}"
+
+        # Set the filters_json object as an output
+        echo "::set-output name=filters_json::$filters_json"
+
+    - name: Generate matrix
+      id: set-matrix
+      run: |
+        FILTERS_JSON=${{ steps.transform-filters.outputs.filters_json }}
+        MATRIX=$(echo "$FILTERS_JSON" | jq -r '
+          {
+            include: [
+              . as $filters |
+              keys[] |
+              select($filters[.]) |
+              { path: . }
+            ]
+          }
+        ')
+        echo "::set-output name=matrix::$MATRIX"
