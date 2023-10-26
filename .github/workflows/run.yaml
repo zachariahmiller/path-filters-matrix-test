@@ -15,40 +15,7 @@ defaults:
     shell: bash -e -o pipefail {0}
 
 
-jobs:
-  # setup:
-  #   runs-on: ubuntu-latest
-  #   outputs:
-  #       matrix: ${{ steps.list-subfolders.outputs.subfolders }}
-  #       filters_file: ${{ steps.save-filters.outputs.filters_file }}
-  #   steps:    
-  #   - name: Checkout the code
-  #     uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-  #   - name: List subfolders
-  #     id: list-subfolders
-  #     run: |
-  #       SUBFOLDERS=$(find ${{ github.workspace }}/capabilities -mindepth 1 -maxdepth 1 -type d -printf '%P\n')
-  #       SUBFOLDERS_JSON=$(echo "$SUBFOLDERS" | jq -R -s -c 'split("\n")[:-1]')
-  #       echo "subfolders=$SUBFOLDERS_JSON" >> $GITHUB_OUTPUT
-  #   - name: save filters
-  #     id: save-filters
-  #     run: |
-  #       #echo "${{ steps.list-subfolders.outputs.subfolders }}"
-  #       # Convert JSON array to Bash array
-  #       IFS=',' read -r -a filters <<< "$(echo '${{ steps.list-subfolders.outputs.subfolders }}' | jq -r '.[]')"
-
-  #       # Start filters configuration
-  #       echo "filters:" > filters.yml
-
-  #       # Loop through filters and append to filters configuration
-  #       for filter in "${filters[@]}"; do
-  #       # Remove surrounding quotes added by jq
-  #       filter=$(echo "$filter" | tr -d '"')
-  #       echo "  $filter:" >> filters.yml
-  #       echo "    - 'capabilities/$filter/**'" >> filters.yml
-  #       done
-  #       echo "filters_file=$(cat filters.yml | base64)" >> $GITHUB_OUTPUT
-        
+jobs: 
   check-paths:
     #needs: setup
     runs-on: ubuntu-latest
@@ -57,26 +24,33 @@ jobs:
     steps:
     - name: Checkout the code
       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-    # - name: Restore file from output
-    #   run: |
-    #     echo "${{ needs.setup.outputs.filters_file }}" | base64 --decode > filters.yaml
-    #     cat filters.yaml
+
         
-    - name: Check paths
+    - name: Check capability paths
       id: path-filter
       uses: dorny/paths-filter@v2
       with:
         filters: .github/filters.yaml
-          # istio:
-          #   - 'capabilities/istio/**'
-          # neuvector:
-          #   - 'capabilities/neuvector/**'
-          # uds-core:
-          #   - '**'
     - name: Debug output
       run: echo "${{ steps.path-filter.outputs.changes }}"
 
-  build-and-test:
+  check-bundle-paths:
+    #needs: setup
+    runs-on: ubuntu-latest
+    outputs: 
+      bundle: ${{ steps.path-filter.outputs.changes }}
+    steps:
+    - name: Checkout the code
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1      
+    - name: Check capability paths
+      id: path-filter
+      uses: dorny/paths-filter@v2
+      with:
+        filters: .github/filters.yaml
+    - name: Debug output
+      run: echo "${{ steps.path-filter.outputs.changes }}"
+
+  build-and-test-capabilities:
     needs: check-paths
     strategy:
       matrix:
@@ -85,4 +59,9 @@ jobs:
     with:
       capability: ${{ matrix.capability }}
     secrets: inherit
-        
+
+
+  build-and-test-bundle:
+    needs: check-bundle-paths
+    uses: ./.github/workflows/build-and-test.yaml
+    secrets: inherit
