@@ -1,5 +1,5 @@
 on:
-  push:
+  pull_request:
     branches:
       - main
 
@@ -47,6 +47,7 @@ jobs:
         echo "    - 'capabilities/$filter/**'" >> filters.yml
         done
         echo "filters_file=$(cat filters.yml | base64)" >> $GITHUB_OUTPUT
+        
   check-paths:
     needs: setup
     runs-on: ubuntu-latest
