@@ -25,7 +25,7 @@ jobs:
     - name: List subfolders
       id: list-subfolders
       run: |
-        SUBFOLDERS=$(find ${{ github.workspace }}/your-folder -mindepth 1 -maxdepth 1 -type d -printf '%P\n')
+        SUBFOLDERS=$(find ${{ github.workspace }}/capabilities -mindepth 1 -maxdepth 1 -type d -printf '%P\n')
         SUBFOLDERS_JSON=$(echo "$SUBFOLDERS" | jq -R -s -c 'split("\n")[:-1]')
         echo "name=subfolders::$SUBFOLDERS_JSON" >> $GITHUB_OUTPUT
     - name: test
