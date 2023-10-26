@@ -58,6 +58,7 @@ jobs:
     - name: Restore file from output
       run: |
         echo "${{ needs.setup.outputs.filters_file }}" | base64 --decode > filters.yaml
+        cat filters.yaml
         
     - name: Check paths
       id: path-filter
