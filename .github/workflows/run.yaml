@@ -64,11 +64,12 @@ jobs:
 
   build-and-test:
     needs: check-paths
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         capability: ${{ fromJSON(needs.check-paths.outputs.capabilities) }}
     uses: ./.github/workflows/build-and-test.yaml
     with:
-      platform: ubuntu-latest
+      capability: ${{ matrix.capability }}
     secrets: inherit
         
