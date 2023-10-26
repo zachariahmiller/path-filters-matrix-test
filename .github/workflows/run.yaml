@@ -66,10 +66,16 @@ jobs:
       id: path-filter
       uses: dorny/paths-filter@v2
       with:
-        filters: .github/workflows/filters.yaml
+        filters: | #.github/workflows/filters.yaml
+          istio:
+            - 'capabilities/istio/**'
+          neuvector:
+            - 'capabilities/neuvector/**'
+          uds-core:
+            - '**'
     - name: Debug output
       run: echo "${{ steps.path-filter.outputs.changes }}"
-      
+
   build-and-test:
     needs: check-paths
     strategy:
