@@ -1,46 +1,46 @@
 on:
-    push:
-      branches:
-        - main
-  
-  
-  permissions:
-    id-token: write
-    contents: read
-  
-  defaults:
-    run:
-      # We need -e -o pipefail for consistency with GitHub Actions' default behavior
-      shell: bash -e -o pipefail {0}
-  
-  
-  jobs:
-    check_changes:
-      runs-on: ubuntu-latest
-      outputs:
-          matrix: ${{ steps.list-subfolders.outputs.subfolders }}
-      steps:    
-      - name: Checkout the code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - name: List subfolders
-        id: list-subfolders
-        run: |
-          SUBFOLDERS=$(find ${{ github.workspace }}/capabilities -mindepth 1 -maxdepth 1 -type d -printf '%P\n')
-          SUBFOLDERS_JSON=$(echo "$SUBFOLDERS" | jq -R -s -c 'split("\n")[:-1]')
-          echo "subfolders=$SUBFOLDERS_JSON" >> $GITHUB_OUTPUT
-      - name: test
-        run: |
-          echo "${{ steps.list-subfolders.outputs.subfolders }}"
-          # Convert JSON array to Bash array
-          IFS=',' read -r -a filters <<< "$(echo "${{ steps.list-subfolders.outputs.subfolders }}" | jq -r '.[]')"
-  
-          # Start filters configuration
-          echo "filters:" > filters.yml
-  
-          # Loop through filters and append to filters configuration
-          for filter in "${filters[@]}"; do
-          # Remove surrounding quotes added by jq
-          filter=$(echo "$filter" | tr -d '"')
-          echo "  $filter:" >> filters.yml
-          echo "    - 'capabilities/$filter/**'" >> filters.yml
-          done
+  push:
+    branches:
+      - main
+
+
+permissions:
+  id-token: write
+  contents: read
+
+defaults:
+  run:
+    # We need -e -o pipefail for consistency with GitHub Actions' default behavior
+    shell: bash -e -o pipefail {0}
+
+
+jobs:
+  check_changes:
+    runs-on: ubuntu-latest
+    outputs:
+        matrix: ${{ steps.list-subfolders.outputs.subfolders }}
+    steps:    
+    - name: Checkout the code
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+    - name: List subfolders
+      id: list-subfolders
+      run: |
+        SUBFOLDERS=$(find ${{ github.workspace }}/capabilities -mindepth 1 -maxdepth 1 -type d -printf '%P\n')
+        SUBFOLDERS_JSON=$(echo "$SUBFOLDERS" | jq -R -s -c 'split("\n")[:-1]')
+        echo "subfolders=$SUBFOLDERS_JSON" >> $GITHUB_OUTPUT
+    - name: test
+      run: |
+        echo "${{ steps.list-subfolders.outputs.subfolders }}"
+        # Convert JSON array to Bash array
+        IFS=',' read -r -a filters <<< "$(echo "${{ steps.list-subfolders.outputs.subfolders }}" | jq -r '.[]')"
+
+        # Start filters configuration
+        echo "filters:" > filters.yml
+
+        # Loop through filters and append to filters configuration
+        for filter in "${filters[@]}"; do
+        # Remove surrounding quotes added by jq
+        filter=$(echo "$filter" | tr -d '"')
+        echo "  $filter:" >> filters.yml
+        echo "    - 'capabilities/$filter/**'" >> filters.yml
+        done
