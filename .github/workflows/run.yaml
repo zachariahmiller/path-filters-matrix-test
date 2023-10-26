@@ -42,6 +42,6 @@ jobs:
         # Remove surrounding quotes added by jq
         filter=$(echo "$filter" | tr -d '"')
         echo "  $filter:" >> filters.yml
-        echo "    - \${{ env.$(echo "$filter" | tr '[:lower:]' '[:upper:]') }}/**" >> filters.yml
+        echo "    - '\${{ env.$(echo "$filter" | tr '[:lower:]' '[:upper:]') }}/**'" >> filters.yml
         done
         cat filters.yaml
